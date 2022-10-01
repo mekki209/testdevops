@@ -1,4 +1,4 @@
-﻿variables:
+variables:
   acrName: acrpvakscac
   aksClusterName: aks-pvaks-cac-001
   azureResourceGroup: rg-pvaks-cac
