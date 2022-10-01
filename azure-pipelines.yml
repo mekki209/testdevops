@@ -1,0 +1,58 @@
+﻿variables:
+  acrName: acrpvakscac
+  aksClusterName: aks-pvaks-cac-001
+  azureResourceGroup: rg-pvaks-cac
+  azureSubscriptionEndpoint: azure
+  repository: simple-webapp
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        pool: aks-private
+        steps:
+          - task: AzureCLI@2
+            displayName: Build with ACR
+            inputs:
+              azureSubscription: $(azureSubscriptionEndpoint)
+              scriptType: pscore
+              scriptLocation: inlineScript
+              inlineScript: |
+                az acr login --name $(acrName)
+                az acr build --agent-pool myagentpool --image $(repository):$(Build.BuildId) --registry $(acrName) --file $(Build.Repository.LocalPath)/Dockerfile $(Build.Repository.LocalPath)
+
+          - task: CopyFiles@2
+            inputs:
+              sourceFolder: $(Build.Repository.LocalPath)
+              contents: "deployment.yml"
+              targetFolder: $(Build.ArtifactStagingDirectory)
+              overwrite: true
+
+          - publish: $(Build.ArtifactStagingDirectory)
+            artifact: $(repository)
+
+      - job: Deploy
+        pool: aks-private
+        steps:
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+            displayName: "Replace tokens"
+            inputs:
+              rootDirectory: $(Pipeline.Workspace)\$(repository)
+              targetFiles: |
+                deployment.yml
+              encoding: auto
+              writeBOM: true
+              escapeType: no escaping
+              tokenPrefix: __
+              tokenSuffix: __
+              
+          - task: Kubernetes@1
+            displayName: "kubectl"
+            inputs:
+              connectionType: Azure Resource Manager
+              azureSubscriptionEndpoint: $(azureSubscriptionEndpoint)
+              azureResourceGroup: $(azureResourceGroup)
+              kubernetesCluster: $(aksClusterName)
+              command: apply
+              useConfigurationFile: true
+              configuration: $(Pipeline.Workspace)\$(repository)\deployment.yml
