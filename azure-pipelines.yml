@@ -31,9 +31,13 @@ stages:
           - publish: $(Build.ArtifactStagingDirectory)
             artifact: $(repository)
 
+  - stage: Deploy
+    jobs:
       - job: Deploy
         pool: aks-private
         steps:
+          - task: DownloadBuildArtifacts@0
+          
           - task: qetza.replacetokens.replacetokens-task.replacetokens@3
             displayName: "Replace tokens"
             inputs:
@@ -45,7 +49,7 @@ stages:
               escapeType: no escaping
               tokenPrefix: __
               tokenSuffix: __
-              
+
           - task: Kubernetes@1
             displayName: "kubectl"
             inputs:
