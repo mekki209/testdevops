@@ -45,7 +45,8 @@ metadata:
     appgw.ingress.kubernetes.io/use-private-ip: "true"
 spec:
   rules:
-    - http:
+    - host: simple-webapp.mydomain.com
+      http:
         paths:
           - path: /
             pathType: Prefix
