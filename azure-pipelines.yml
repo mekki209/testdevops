@@ -15,7 +15,7 @@ stages:
             displayName: Build with ACR
             inputs:
               azureSubscription: $(azureSubscriptionEndpoint)
-              scriptType: pscore
+              scriptType: ps
               scriptLocation: inlineScript
               inlineScript: |
                 az acr login --name $(acrName)
@@ -36,8 +36,10 @@ stages:
       - job: Deploy
         pool: aks-private
         steps:
-          - task: DownloadBuildArtifacts@0
-          
+          - download: current
+            artifact: $(repository)
+            displayName: Download artifact
+
           - task: qetza.replacetokens.replacetokens-task.replacetokens@3
             displayName: "Replace tokens"
             inputs:
